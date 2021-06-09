@@ -1,0 +1,19 @@
+.images-wrapper {
+  position: relative;
+}
+
+.image-wrapper {
+  overflow: hidden;
+  left: 0;
+  position: absolute;
+  top: 0;
+  margin: 0;
+}
+
+.image-wrapper img {
+  max-width: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
