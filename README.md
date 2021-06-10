@@ -1,5 +1,4 @@
-# React Scroller Carousel
-
+# React Image Grid
 ## Getting Started
 ### Prerequisites
 
