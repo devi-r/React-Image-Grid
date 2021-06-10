@@ -1,20 +1,42 @@
 import React, { useRef, useState, useEffect } from "react";
 import "./ImageGrid.scss";
 
-const settings = {
-  isTransitioning: false,
-  lastWindowWidth: window.innerWidth,
-  minAspectRatio: null,
-};
-
 const ImageGrid = ({ imagesSrc, spaceBetweenImages, transitionSpeed }) => {
-  let { isTransitioning, lastWindowWidth, minAspectRatio } = settings;
   const wrapperRef = useRef();
   const [imagesList, setImages] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentMinAspectRatio, setMinAspectRatio] = useState(null);
 
   useEffect(() => {
     getAspectRatios();
   }, []);
+
+  let running = false;
+  useEffect(() => {
+    const runCallbacks = () => {
+      computeLayout();
+      running = false;
+    };
+    //screen resize listener
+    const listener = () => {
+      if (!running) {
+        running = true;
+        if (window.requestAnimationFrame) {
+          window.requestAnimationFrame(runCallbacks);
+        } else {
+          setTimeout(runCallbacks, 66);
+        }
+      }
+    };
+
+    if (imagesList?.length) {
+      window.addEventListener("resize", listener);
+    }
+
+    return () => {
+      window.removeEventListener("resize", listener);
+    };
+  }, [imagesList]);
 
   const loadImage = (image) => {
     return new Promise((resolve, reject) => {
@@ -52,45 +74,43 @@ const ImageGrid = ({ imagesSrc, spaceBetweenImages, transitionSpeed }) => {
     return "none";
   };
 
-  let getMinAspectRatio = (lastWindowWidth) => {
+  let getMinAspectRatio = () => {
+    let lastWindowWidth = window.innerWidth;
     if (lastWindowWidth <= 640) return 2;
     else if (lastWindowWidth <= 1280) return 4;
     else if (lastWindowWidth <= 1920) return 5;
     return 6;
   };
 
-  let recomputeMinAspectRatio = () => {
-    var oldMinAspectRatio = minAspectRatio;
-    minAspectRatio = getMinAspectRatio(lastWindowWidth);
-
-    return oldMinAspectRatio !== null && oldMinAspectRatio !== minAspectRatio
-      ? true
-      : false;
-  };
-
-  const computeLayout = (images) => {
+  const computeLayout = (imagesInfo) => {
+    let images = imagesInfo ? imagesInfo : imagesList;
     let { clientWidth } = wrapperRef?.current;
-    // Constants
-    var wrapperWidth = parseInt(clientWidth);
+    let wrapperWidth = parseInt(clientWidth);
 
-    // State
-    var row = []; // The list of images in the current row.
-    var translateX = 0; // The current translateX value that we are at
-    var translateY = 0; // The current translateY value that we are at
-    var rowAspectRatio = 0; // The aspect ratio of the row we are building
+    // Variables
+    let row = []; // The list of images in the current row.
+    let translateX = 0; // The current translateX value that we are at
+    let translateY = 0; // The current translateY value that we are at
+    let rowAspectRatio = 0; // The aspect ratio of the row we are building
 
     // Compute the minimum aspect ratio that should be applied to the rows.
-    let minAspectRatioRequiresTransition = recomputeMinAspectRatio();
+    let oldMinAspectRatio = currentMinAspectRatio;
+    let newMinAspectRatio = getMinAspectRatio();
+
+    let minAspectRatio = newMinAspectRatio;
+    setMinAspectRatio(newMinAspectRatio);
+    let minAspectRatioRequiresTransition =
+      oldMinAspectRatio !== null && oldMinAspectRatio !== newMinAspectRatio;
 
     if (!isTransitioning && minAspectRatioRequiresTransition) {
-      isTransitioning = true;
+      setIsTransitioning(true);
       setTimeout(function () {
-        isTransitioning = false;
+        setIsTransitioning(false);
       }, getTransitionTimeout());
     }
 
     // Get the valid-CSS transition string.
-    var transition = getTransitionString();
+    let transition = getTransitionString();
 
     // Loop through all our images, building them up into rows and computing
     // the working rowAspectRatio.
@@ -107,20 +127,16 @@ const ImageGrid = ({ imagesSrc, spaceBetweenImages, transitionSpeed }) => {
         rowAspectRatio = Math.max(rowAspectRatio, minAspectRatio);
 
         // Compute this row's height.
-        var totalDesiredWidthOfImages =
+        let totalDesiredWidthOfImages =
           wrapperWidth - spaceBetweenImages * (row.length - 1);
-        var rowHeight = totalDesiredWidthOfImages / rowAspectRatio;
+        let rowHeight = totalDesiredWidthOfImages / rowAspectRatio;
 
         // For each image in the row, compute the width, height, translateX,
         // and translateY values, and set them (and the transition value we
         // found above) on each image.
-        //
-        // NOTE: This does not manipulate the DOM, rather it just sets the
-        //       style values on the ProgressiveImage instance. The DOM nodes
-        //       will be updated in _doLayout.
+
         row.forEach((img) => {
-          var imageWidth = rowHeight * img.aspectRatio;
-          // This is NOT DOM manipulation.
+          let imageWidth = rowHeight * img.aspectRatio;
           img.style = {
             width: parseInt(imageWidth),
             height: parseInt(rowHeight),
@@ -128,12 +144,12 @@ const ImageGrid = ({ imagesSrc, spaceBetweenImages, transitionSpeed }) => {
             transform: `translate3d(${translateX}px,${translateY}px,0)`,
           };
 
-          // The next image is this.settings.spaceBetweenImages pixels to the
+          // The next image is spaceBetweenImages pixels to the
           // right of this image.
           translateX += imageWidth + spaceBetweenImages;
         });
 
-        // Reset our state variables for next row.
+        // Reset our variables for next row.
         row = [];
         rowAspectRatio = 0;
         translateY += parseInt(rowHeight) + spaceBetweenImages;
@@ -143,8 +159,8 @@ const ImageGrid = ({ imagesSrc, spaceBetweenImages, transitionSpeed }) => {
 
     // No space below the last image
     let totalHeight = translateY - spaceBetweenImages;
-    wrapperRef.current.style.height = totalHeight + "px"; // I added
-    setImages(images); // I added
+    wrapperRef.current.style.height = totalHeight + "px";
+    setImages(images);
   };
 
   return (
