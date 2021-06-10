@@ -1,6 +1,7 @@
 # React Image Grid
 ![demo-dweb](https://github.com/devi-r/React-Image-Grid/blob/main/src/demo/demo-web.png)
 ![demo-dweb](https://github.com/devi-r/React-Image-Grid/blob/main/src/demo/demo-mweb.png)
+![demo-dweb](https://github.com/devi-r/React-Image-Grid/blob/main/src/demo/demo-tab.png)
 
 ## Getting Started
 ### Prerequisites
