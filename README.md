@@ -1,11 +1,11 @@
 # React Image Grid
 
-##Features
+## Features
 Responsiveness: Images are loaded at different resolutions depending on screen size. Also, because images are positioned using CSS transforms, images smartly re-tile when you shrink or expand the browser window.
 
 Reference : https://github.com/schlosser/pig.js
 
-###Input Prop to ImageGrid: 
+### Input Prop to ImageGrid: 
 Array of imageUrls (Component will compute the aspectRatio for each image)
 
 ![demo-dweb](https://github.com/devi-r/React-Image-Grid/blob/main/src/demo/demo-web.png)
